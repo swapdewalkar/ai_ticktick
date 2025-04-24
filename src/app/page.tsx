@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiCheckCircle, FiCircle, FiPlus, FiTrash2, FiCalendar, FiList, FiFlag, FiInbox, FiStar } from 'react-icons/fi';
+import { FiCheckCircle, FiCircle, FiPlus, FiTrash2, FiCalendar, FiList, FiFlag, FiInbox, FiStar, FiMoon, FiSun } from 'react-icons/fi';
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -25,15 +25,18 @@ type Task = {
 };
 
 export default function Home() {
-  // Define lists
-  const [lists, setLists] = useState<List[]>([
+  // Define dark mode state
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Define default lists
+  const defaultLists: List[] = [
     { id: 'inbox', name: 'Inbox', icon: <FiInbox className="h-5 w-5" /> },
     { id: 'work', name: 'Work', icon: <FiStar className="h-5 w-5" /> },
     { id: 'personal', name: 'Personal', icon: <FiList className="h-5 w-5" /> },
-  ]);
+  ];
 
-  // Define tasks with priorities and list assignments
-  const [tasks, setTasks] = useState<Task[]>([
+  // Define default tasks
+  const defaultTasks: Task[] = [
     {
       id: '1',
       title: 'Complete project proposal',
@@ -73,7 +76,11 @@ export default function Home() {
       priority: 'high',
       listId: 'inbox'
     },
-  ]);
+  ];
+
+  // Initialize state
+  const [lists, setLists] = useState<List[]>(defaultLists);
+  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedListId, setSelectedListId] = useState('inbox');
@@ -82,6 +89,89 @@ export default function Home() {
   const [newListName, setNewListName] = useState('');
   const [isAddingList, setIsAddingList] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    // Load dark mode preference
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode) {
+      setDarkMode(JSON.parse(savedDarkMode));
+    }
+
+    // Load lists
+    const savedLists = localStorage.getItem('lists');
+    if (savedLists) {
+      try {
+        // Parse the JSON string
+        const parsedLists = JSON.parse(savedLists);
+
+        // Restore the React elements for icons
+        const listsWithIcons = parsedLists.map((list: any) => {
+          let icon;
+          if (list.id === 'inbox') {
+            icon = <FiInbox className="h-5 w-5" />;
+          } else if (list.id === 'work') {
+            icon = <FiStar className="h-5 w-5" />;
+          } else {
+            icon = <FiList className="h-5 w-5" />;
+          }
+          return { ...list, icon };
+        });
+
+        setLists(listsWithIcons);
+      } catch (error) {
+        console.error('Error parsing lists from localStorage:', error);
+      }
+    }
+
+    // Load tasks
+    const savedTasks = localStorage.getItem('tasks');
+    if (savedTasks) {
+      try {
+        const parsedTasks = JSON.parse(savedTasks);
+
+        // Convert date strings back to Date objects
+        const tasksWithDates = parsedTasks.map((task: any) => ({
+          ...task,
+          dueDate: task.dueDate ? new Date(task.dueDate) : undefined
+        }));
+
+        setTasks(tasksWithDates);
+      } catch (error) {
+        console.error('Error parsing tasks from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Save data to localStorage whenever tasks or lists change
+  useEffect(() => {
+    // Save lists (without React elements)
+    const listsForStorage = lists.map(list => ({
+      id: list.id,
+      name: list.name,
+      // Don't save the icon React element
+    }));
+    localStorage.setItem('lists', JSON.stringify(listsForStorage));
+
+    // Save tasks (convert Date objects to strings)
+    const tasksForStorage = tasks.map(task => ({
+      ...task,
+      dueDate: task.dueDate ? task.dueDate.toISOString() : undefined
+    }));
+    localStorage.setItem('tasks', JSON.stringify(tasksForStorage));
+  }, [tasks, lists]);
+
+  // Save dark mode preference
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+
+    // Apply dark mode to document
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   // Get filtered tasks based on selected list and search query
   const filteredTasks = tasks
@@ -195,15 +285,17 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 bg-white shadow-md p-4 overflow-y-auto">
+        <aside className={`w-64 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-md p-4 overflow-y-auto`}>
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">Lists</h2>
+            <h2 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>Lists</h2>
             <ul className="space-y-1">
               <li>
                 <button
                   onClick={() => setSelectedListId('all')}
                   className={`w-full flex items-center px-3 py-2 rounded-md ${
-                    selectedListId === 'all' ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'
+                    selectedListId === 'all'
+                      ? darkMode ? 'bg-indigo-900 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                      : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   }`}
                 >
                   <FiList className="mr-2 h-5 w-5" />
@@ -215,7 +307,9 @@ export default function Home() {
                   <button
                     onClick={() => setSelectedListId(list.id)}
                     className={`w-full flex items-center px-3 py-2 rounded-md ${
-                      selectedListId === list.id ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'
+                      selectedListId === list.id
+                        ? darkMode ? 'bg-indigo-900 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                        : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                     }`}
                   >
                     {list.icon}
@@ -232,13 +326,17 @@ export default function Home() {
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   placeholder="List name"
-                  className="w-full px-3 py-2 border rounded-md mb-2"
+                  className={`w-full px-3 py-2 border rounded-md mb-2 ${
+                    darkMode ? 'bg-gray-700 text-white border-gray-600' : ''
+                  }`}
                   autoFocus
                 />
                 <div className="flex space-x-2">
                   <button
                     onClick={addList}
-                    className="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    className={`px-3 py-1 rounded-md ${
+                      darkMode ? 'bg-indigo-800 hover:bg-indigo-900' : 'bg-indigo-600 hover:bg-indigo-700'
+                    } text-white`}
                   >
                     Add
                   </button>
@@ -247,7 +345,9 @@ export default function Home() {
                       setIsAddingList(false);
                       setNewListName('');
                     }}
-                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    className={`px-3 py-1 rounded-md ${
+                      darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
                     Cancel
                   </button>
@@ -256,7 +356,9 @@ export default function Home() {
             ) : (
               <button
                 onClick={() => setIsAddingList(true)}
-                className="mt-2 flex items-center text-indigo-600 hover:text-indigo-800"
+                className={`mt-2 flex items-center ${
+                  darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-800'
+                }`}
               >
                 <FiPlus className="mr-1" /> Add List
               </button>
@@ -267,26 +369,33 @@ export default function Home() {
         {/* Main content */}
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-6`}>
               <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
               <div className="space-y-4">
                 <input
                   type="text"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="What needs to be done?"
-                  className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  id="new-task-input"
+                  placeholder="What needs to be done? (Press 'n' to focus)"
+                  className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    darkMode ? 'bg-gray-700 text-white border-gray-600' : ''
+                  }`}
                 />
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium mb-1 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       List
                     </label>
                     <select
                       value={selectedListId}
                       onChange={(e) => setSelectedListId(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className={`w-full px-3 py-2 border rounded-md ${
+                        darkMode ? 'bg-gray-700 text-white border-gray-600' : ''
+                      }`}
                     >
                       {lists.map(list => (
                         <option key={list.id} value={list.id}>
@@ -297,13 +406,17 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium mb-1 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       Priority
                     </label>
                     <select
                       value={selectedPriority}
                       onChange={(e) => setSelectedPriority(e.target.value as Priority)}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className={`w-full px-3 py-2 border rounded-md ${
+                        darkMode ? 'bg-gray-700 text-white border-gray-600' : ''
+                      }`}
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -312,13 +425,17 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium mb-1 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       Due Date
                     </label>
                     <DatePicker
                       selected={selectedDueDate}
                       onChange={(date) => setSelectedDueDate(date)}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className={`w-full px-3 py-2 border rounded-md ${
+                        darkMode ? 'bg-gray-700 text-white border-gray-600' : ''
+                      }`}
                       placeholderText="Select a date"
                       dateFormat="MMM d, yyyy"
                       isClearable
@@ -335,7 +452,11 @@ export default function Home() {
                   </button>
                   <button
                     onClick={resetForm}
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className={`px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                      darkMode
+                        ? 'bg-gray-700 text-white border-gray-600 hover:bg-gray-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
                   >
                     Reset
                   </button>
@@ -343,7 +464,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
               <h2 className="text-xl font-semibold mb-4">
                 {selectedListId === 'all' ? 'All Tasks' : lists.find(list => list.id === selectedListId)?.name || 'Tasks'}
               </h2>
@@ -399,8 +520,9 @@ export default function Home() {
         </main>
       </div>
 
-      <footer className="bg-white p-4 text-center text-gray-500 text-sm border-t">
+      <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} p-4 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-sm border-t`}>
         <p>TickTick Clone - A simple task management application</p>
+        <p className="mt-1 text-xs">Keyboard shortcuts: 'n' for new task, '/' for search, 'd' for dark mode</p>
       </footer>
     </div>
   );
