@@ -1,0 +1,65 @@
+# Prompts Used for Building TickTick Clone
+
+## Initial Request
+"I want make a clone of that website"
+
+## Follow-up Requests
+"yes" (to continue working on the project)
+
+"- writing all prompt to agent in txt file in thi folder
+- use these and commit the code https://github.com/swapdewalkar/ai_ticktick
+- continue working on above changes"
+
+## Project Description
+This project is a clone of TickTick.com, a task management application. The clone includes:
+
+1. Task Management
+   - Create, read, update, and delete tasks
+   - Mark tasks as complete/incomplete
+   - Set task priorities (low, medium, high)
+   - Set due dates for tasks
+   - Organize tasks into lists
+
+2. List Management
+   - Create new lists
+   - Filter tasks by list
+   - View all tasks across lists
+
+3. UI Features
+   - Responsive sidebar navigation
+   - Search functionality
+   - Date picker for selecting due dates
+   - Color-coded priorities
+   - Form reset functionality
+
+4. Technology Stack
+   - Next.js (React framework)
+   - TypeScript for type safety
+   - Tailwind CSS for styling
+   - React Icons for icons
+   - React DatePicker for date selection
+
+## Planned Enhancements
+1. Data Persistence
+   - Add a real backend (like Supabase)
+   - Implement local storage for offline functionality
+
+2. Additional Features
+   - Drag and drop for task reordering
+   - Subtasks/checklist items
+   - Task notes or descriptions
+   - Recurring tasks
+   - Tags/labels for tasks
+   - Time tracking/Pomodoro timer
+
+3. User Experience
+   - Dark mode toggle
+   - Keyboard shortcuts
+   - Mobile-responsive design improvements
+   - Task sorting options (by date, priority, etc.)
+   - Task filtering options (completed, today, upcoming)
+
+4. Authentication
+   - User accounts
+   - Multi-user support
+   - Sharing and collaboration features
